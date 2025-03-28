@@ -2,35 +2,48 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static UnityEngine.Rendering.DebugUI;
+
+
+
+[System.Serializable]
+public struct HeatInfo
+{
+    public int isActive;
+    public Vector4 position;
+    [MinAttribute(0.00001f)]
+    public float radius;
+    public float temperature;
+
+
+    public static unsafe int GetSize() => sizeof(HeatInfo);
+}
 
 public class ThermalComponent : MonoBehaviour
 {
+    const int MaxHeat = 5;
+
     public Material material;
-  public  Texture2D texture;
+    private ComputeBuffer m_buffer;
+    public HeatInfo[] heatInfos = new HeatInfo[5]; 
+
     // Start is called before the first frame update
     void Start()
     {
-        material = GetComponent<Renderer>().material;
-        texture = new Texture2D(512, 512,TextureFormat.RGBAFloat,false);
+     //   material = GetComponent<Renderer>().material;
+        m_buffer = new ComputeBuffer(MaxHeat, HeatInfo.GetSize(),ComputeBufferType.Structured);
 
     }
 
     // Update is called once per frame
     void Update()
     {
+        m_buffer.SetData(heatInfos);
+        material.SetBuffer("heatInfos", m_buffer);
+    }
 
-        float value = Mathf.Abs( Mathf.Sin(Time.realtimeSinceStartup)) ;
-        Debug.Log(value);
-        for (int i = 0; i < 512; i++)
-        {
-          
-            for (int j = 0; j < 512; j++)
-            {
-                texture.SetPixel(i, j, new Color(value, value, value, 1));
-               
-            }
-        }
-        texture.Apply();
-        material.SetTexture("_Texture2D", texture);
+    private void OnDisable()
+    {
+        m_buffer?.Dispose();
     }
 }
