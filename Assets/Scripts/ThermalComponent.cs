@@ -1,49 +1,58 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using static UnityEngine.Rendering.DebugUI;
 
-
-
-[System.Serializable]
-public struct HeatInfo
-{
-    public int isActive;
-    public Vector4 position;
-    [MinAttribute(0.00001f)]
-    public float radius;
-    public float temperature;
-
-
-    public static unsafe int GetSize() => sizeof(HeatInfo);
-}
-
 public class ThermalComponent : MonoBehaviour
 {
-    const int MaxHeat = 5;
+    [Header("Thermal Variables")]
+    public float temperature;
+    [MinAttribute(0.00001f)]
+    public float radius;
 
-    public Material material;
-    private ComputeBuffer m_buffer;
-    public HeatInfo[] heatInfos = new HeatInfo[5]; 
+    [Header("Heat Direction")]
+    public   bool isSpotActive;
+    public Vector3 directionSpot;
+    public float temperatureSpot;
+    [Range(0, 180)] public float angle;
+    [Range(0, 180)] public float outerAngle;
+    public float spotSize;
+    private float cutOff;
 
-    // Start is called before the first frame update
-    void Start()
+
+    [SerializeField] private bool m_isActive;
+
+    private ThermalManager m_thermalManager;
+
+    public void Start()
     {
-     //   material = GetComponent<Renderer>().material;
-        m_buffer = new ComputeBuffer(MaxHeat, HeatInfo.GetSize(),ComputeBufferType.Structured);
-
+        m_thermalManager = FindFirstObjectByType<ThermalManager>();
+        SetActiveThermalSource(m_isActive);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void SetActiveThermalSource(bool isThermalActive)
     {
-        m_buffer.SetData(heatInfos);
-        material.SetBuffer("heatInfos", m_buffer);
+        m_isActive = isThermalActive;
+        if (m_isActive) m_thermalManager.AddThermalComponent(this);
+        else m_thermalManager.RemoveThermalComponent(this);
     }
 
-    private void OnDisable()
+
+    public HeatInfo GetHeatInfos()
     {
-        m_buffer?.Dispose();
+        HeatInfo info = new HeatInfo();
+        info.isActive = m_isActive ? 1 : 0;
+        info.position = transform.position;
+        info.temperature = temperature;
+        info.radius = radius;
+        info.isSpotActive =  isSpotActive ? 1 : 0; 
+        info.spotDirection = directionSpot;
+        info.lengthSpot = spotSize;
+        info.cutOffSpot = Mathf.Cos(Mathf.Deg2Rad * angle);
+        info.outerCutOffSpot = Mathf.Cos(Mathf.Deg2Rad * outerAngle); ;
+        info.temperatureSpot = temperatureSpot;
+        return info;
     }
 }
