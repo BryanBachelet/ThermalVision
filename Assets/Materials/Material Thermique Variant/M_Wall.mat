@@ -7,36 +7,28 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_ThermalShader_V4_Transparent
+  m_Name: M_Wall
   m_Shader: {fileID: 4800000, guid: 720f7180ee40af94fb54f8d6d3f97cdb, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
+  m_Parent: {fileID: 2100000, guid: 4ba94a3dbb1a1424c85b7d47644ec789, type: 2}
+  m_ModifiedSerializedProperties: 16
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _ACTIVETHERMALMODE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _ThermalTexture:
-        m_Texture: {fileID: 2800000, guid: d7d6fbe5081797a4297445cbb525c99f, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+    m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _ActiveThermalMode: 1
-    - _BaseTemperature: 0
-    - _Glossiness: 0.467
+    - _BaseTemperature: 0.08
+    - _Glossiness: 0.444
     - _Metallic: 0
     m_Colors:
-    - _Color: {r: 0.98039216, g: 0.5690276, b: 0, a: 1}
+    - _Color: {r: 0.6320754, g: 0.5804101, b: 0.5098344, a: 1}
   m_BuildTextureStacks: []

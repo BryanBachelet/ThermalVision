@@ -14,18 +14,18 @@ Shader "Custom/ThermalShader_V4"
     {
         Tags { "RenderType"="Opaque"}
         LOD 200
-        CGPROGRAM
-
        
+        CGPROGRAM
 
         #include "UnityCG.cginc"
         // Physically based Standard lighting model, and enable shadows on all light types
-        #pragma surface surf Standard fullforwardshadows  vertex:vert finalcolor:mycolor
+        #pragma surface surf Standard fullforwardshadows vertex:vert finalcolor:mycolor 
 
         // Use shader model 3.0 target, to get nicer looking lighting
         #pragma target 3.0
-
+        
         sampler2D _MainTex;
+     
         sampler2D _ThermalTexture;
 
         struct HeatInfo
@@ -43,8 +43,10 @@ Shader "Custom/ThermalShader_V4"
         };
         
         #ifdef SHADER_API_D3D11
-          StructuredBuffer<HeatInfo> heatInfos ;
+            uniform     StructuredBuffer<HeatInfo> heatInfos ;
         #endif
+
+        uniform float numberHeatSource;
 
         half _Glossiness;
         half _Metallic;
@@ -68,14 +70,14 @@ Shader "Custom/ThermalShader_V4"
         {
             UNITY_INITIALIZE_OUTPUT(Input,o);
             o.pos = mul (unity_ObjectToWorld, i.vertex);
-         }
+        }
 
-        void mycolor (Input IN, SurfaceOutputStandard o, inout fixed4 color)
-          {
+        void mycolor (Input IN,  SurfaceOutputStandard  o, inout fixed4 color)
+        {
             float finalTemperature = _BaseTemperature;
             #ifdef SHADER_API_D3D11
                
-                for(int j = 0 ; j < 32 ; j++)
+                for(int j = 0 ; j < numberHeatSource ; j++)
                 {
                     float3 directionElement =  IN.pos - heatInfos[j].position;
                     float dotresult =  dot(normalize(directionElement), heatInfos[j].spotDirection);
@@ -86,27 +88,28 @@ Shader "Custom/ThermalShader_V4"
                     float distancePosition =   distance(heatInfos[j].position , IN.pos);
 
                     
+                    float valueDistanceSpot = 1.0f - step(1.0, (distancePosition /  heatInfos[j].lengthSpot));
+                    float valueDistanceNormal = 1.0f - step(1.0, (distancePosition /  heatInfos[j].radius));
 
-                    float ratioDistance = 1.0f - (distancePosition /  heatInfos[j].lengthSpot);
+                    float ratioDistance =  1.0f - (distancePosition /  heatInfos[j].lengthSpot) *valueDistanceSpot;
                     float invDist =  1.0f /(1.0f + distancePosition);
                     float curTemperature =   (14*  log10(invDist)  +  heatInfos[j].temperatureSpot)/100;
                     curTemperature =  ratioDistance * curTemperature  ;
                     finalTemperature += saturate(curTemperature  ) * heatInfos[j].isActive * intensity;   
                  
-                    ratioDistance = 1.0f - (distancePosition /  heatInfos[j].radius);
+                    ratioDistance = 1.0f - (distancePosition /  heatInfos[j].radius) * valueDistanceNormal;
                     invDist =  1.0f /(1.0f + distancePosition);
                     curTemperature =   (14*  log10(invDist)  +  heatInfos[j].temperature)/100;
                     curTemperature =  ratioDistance * curTemperature  ;
-                    finalTemperature += saturate(curTemperature  ) * heatInfos[j].isActive *(1-intensity)  ;   
+                    finalTemperature += saturate(curTemperature  ) * heatInfos[j].isActive *(1-intensity) * valueDistanceNormal ;   
                 }
 
             #endif
-           color = color  * (1- _ActiveThermalMode)  + (tex2D(_ThermalTexture, float2( finalTemperature ,1)) * _ActiveThermalMode);
-       
+            color = color  * (1- _ActiveThermalMode)  + (tex2D(_ThermalTexture, float2( finalTemperature ,1)) * _ActiveThermalMode);
         }
 
 
-        void surf (Input IN, inout SurfaceOutputStandard o)
+        void surf (Input IN, inout SurfaceOutputStandard  o)
         {  
        
             // Albedo comes from a texture tinted by color
@@ -119,8 +122,8 @@ Shader "Custom/ThermalShader_V4"
 
                 o.Albedo = c.rgb * (1- _ActiveThermalMode);
 
-                o.Metallic = _Metallic;
-                o.Smoothness = _Glossiness;
+                o.Metallic = _Metallic *(1- _ActiveThermalMode);
+                o.Smoothness = _Glossiness *(1- _ActiveThermalMode);
 
                 o.Alpha = c.a *(1- _ActiveThermalMode);
             #endif

@@ -12,9 +12,5 @@ public class ThermalValue : MonoBehaviour
         materialTest =  GetComponent<MeshRenderer>().material;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
+   
 }

@@ -41,6 +41,10 @@ public class ThermalManager : MonoBehaviour
     public bool isThermalModeActive;
     private bool isEditorUdapteTrigger;
     public ThermalValue thermalValue;
+
+    // Temps
+    private bool isOneTime;
+
     #region Unity Functions
     private void Awake()
     {
@@ -50,17 +54,14 @@ public class ThermalManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        m_thermalBuffer = new ComputeBuffer(MaxThermalSource, HeatInfo.GetSize(), ComputeBufferType.Structured);
+        m_thermalBuffer = new ComputeBuffer(MaxThermalSource, HeatInfo.GetSize(), ComputeBufferType.Default, ComputeBufferMode.Dynamic);
     }
 
     // Update is called once per frame
     void Update()
     {
         UpdateThermalSourceData();
-        if (Input.GetKeyDown(KeyCode.G))
-        {
-            ChangeViewMode();
-        }
+   
     }
 
 #if UNITY_EDITOR
@@ -69,7 +70,7 @@ public class ThermalManager : MonoBehaviour
 
         isEditorUdapteTrigger = true;
         m_thermalComponentsActiveCount = 0;
-        m_thermalBuffer = new ComputeBuffer(MaxThermalSource, HeatInfo.GetSize(), ComputeBufferType.Structured);
+        m_thermalBuffer = new ComputeBuffer(MaxThermalSource, HeatInfo.GetSize(), ComputeBufferType.Default, ComputeBufferMode.Dynamic);
         ThermalComponent[] thermalComponentArray = FindObjectsByType<ThermalComponent>(FindObjectsSortMode.InstanceID);
 
         for (int i = 0; i < thermalComponentArray.Length; i++)
@@ -117,7 +118,18 @@ public class ThermalManager : MonoBehaviour
             thermalValue.materialTest.SetInt("_ActiveThermalMode", isThermalModeActive ? 1 : 0);
         }
     }
-    private void OnDisable()
+
+    public void ChangeViewMode(bool state)
+    {
+        isThermalModeActive = state;
+        m_thermalMaterial.SetInt("_ActiveThermalMode", isThermalModeActive ? 1 : 0);
+        m_thermalMaterial2.SetInt("_ActiveThermalMode", isThermalModeActive ? 1 : 0);
+        if (thermalValue != null)
+        {
+            thermalValue.materialTest.SetInt("_ActiveThermalMode", isThermalModeActive ? 1 : 0);
+        }
+    }
+        private void OnDisable()
     {
         m_thermalBuffer?.Release();
     }
@@ -132,6 +144,7 @@ public class ThermalManager : MonoBehaviour
 
     public void UpdateThermalSourceData()
     {
+  
         HeatInfo[] heatInfos = new HeatInfo[m_thermalComponentsActiveCount];
         for (int i = 0; i < m_thermalComponentsActiveCount; i++)
         {
@@ -139,9 +152,11 @@ public class ThermalManager : MonoBehaviour
         }
 
         m_thermalBuffer.SetData(heatInfos);
-        m_thermalMaterial.SetBuffer("heatInfos", m_thermalBuffer);
-        m_thermalMaterial2.SetBuffer("heatInfos", m_thermalBuffer);
-        if(thermalValue != null)
+        Shader.SetGlobalBuffer("heatInfos", m_thermalBuffer);
+        Shader.SetGlobalFloat("numberHeatSource", m_thermalComponentsActiveCount);
+        //m_thermalMaterial.SetBuffer("heatInfos", m_thermalBuffer);
+        //m_thermalMaterial2.SetBuffer("heatInfos", m_thermalBuffer);
+        if (thermalValue != null)
         {
             thermalValue.materialTest.SetBuffer("heatInfos", m_thermalBuffer);
         }

@@ -14,15 +14,14 @@ Shader "Custom/ThermalShader_V4_Transparent"
     {
         Tags {"Queue"="Transparent" "RenderType"="Transparent"}
         LOD 200
-        ZWrite ON 
-
+        ZWrite On
         CGPROGRAM
 
        
 
         #include "UnityCG.cginc"
         // Physically based Standard lighting model, and enable shadows on all light types
-        #pragma surface surf Standard fullforwardshadows  vertex:vert finalcolor:mycolor alpha
+        #pragma surface surf Standard fullforwardshadows alpha  vertex:vert finalcolor:mycolor 
 
         // Use shader model 3.0 target, to get nicer looking lighting
         #pragma target 3.0
@@ -45,8 +44,9 @@ Shader "Custom/ThermalShader_V4_Transparent"
         };
         
         #ifdef SHADER_API_D3D11
-          StructuredBuffer<HeatInfo> heatInfos ;
+         uniform StructuredBuffer<HeatInfo> heatInfos ;
         #endif
+        uniform float numberHeatSource;
 
         half _Glossiness;
         half _Metallic;
@@ -77,7 +77,7 @@ Shader "Custom/ThermalShader_V4_Transparent"
             float finalTemperature = _BaseTemperature;
             #ifdef SHADER_API_D3D11
                
-                for(int j = 0 ; j < 32 ; j++)
+                for(int j = 0 ; j < numberHeatSource ; j++)
                 {
                     float3 directionElement =  IN.pos - heatInfos[j].position;
                     float dotresult =  dot(normalize(directionElement), heatInfos[j].spotDirection);
@@ -87,19 +87,20 @@ Shader "Custom/ThermalShader_V4_Transparent"
                     
                     float distancePosition =   distance(heatInfos[j].position , IN.pos);
 
-                    
+                     float valueDistanceSpot = 1.0f - step(1.0, (distancePosition /  heatInfos[j].lengthSpot));
+                    float valueDistanceNormal = 1.0f - step(1.0, (distancePosition /  heatInfos[j].radius));
 
-                    float ratioDistance = 1.0f - (distancePosition /  heatInfos[j].lengthSpot);
+                    float ratioDistance =  1.0f - (distancePosition /  heatInfos[j].lengthSpot) *valueDistanceSpot;
                     float invDist =  1.0f /(1.0f + distancePosition);
                     float curTemperature =   (14*  log10(invDist)  +  heatInfos[j].temperatureSpot)/100;
                     curTemperature =  ratioDistance * curTemperature  ;
                     finalTemperature += saturate(curTemperature  ) * heatInfos[j].isActive * intensity;   
                  
-                    ratioDistance = 1.0f - (distancePosition /  heatInfos[j].radius);
+                    ratioDistance = 1.0f - (distancePosition /  heatInfos[j].radius) * valueDistanceNormal;
                     invDist =  1.0f /(1.0f + distancePosition);
                     curTemperature =   (14*  log10(invDist)  +  heatInfos[j].temperature)/100;
                     curTemperature =  ratioDistance * curTemperature  ;
-                    finalTemperature += saturate(curTemperature  ) * heatInfos[j].isActive *(1-intensity)  ;   
+                    finalTemperature += saturate(curTemperature  ) * heatInfos[j].isActive *(1-intensity) * valueDistanceNormal ;   
                 }
 
             #endif
@@ -107,7 +108,7 @@ Shader "Custom/ThermalShader_V4_Transparent"
            
            float alphaValue = clamp(finalTemperature,0.5f,1.0f) ;
           
-           color.a = color.a * (1-_ActiveThermalMode) +   (  smoothstep(0,.8f,alphaValue) * _ActiveThermalMode);
+           color.a =  color.a * (1-_ActiveThermalMode) +   (  smoothstep(0,.8f,alphaValue) * _ActiveThermalMode); 
         }
 
 
@@ -124,10 +125,10 @@ Shader "Custom/ThermalShader_V4_Transparent"
 
                 o.Albedo = c.rgb * (1- _ActiveThermalMode);
 
-                o.Metallic = _Metallic;
-                o.Smoothness = _Glossiness;
+                o.Metallic = _Metallic *(1- _ActiveThermalMode);;
+                o.Smoothness = _Glossiness *(1- _ActiveThermalMode);;
 
-                o.Alpha = c.a *(1- _ActiveThermalMode);
+                o.Alpha = 1*(1- _ActiveThermalMode);
             #endif
         }
         ENDCG

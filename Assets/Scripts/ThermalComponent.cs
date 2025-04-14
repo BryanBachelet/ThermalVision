@@ -22,7 +22,7 @@ public class ThermalComponent : MonoBehaviour
     private float cutOff;
 
 
-    [SerializeField] private bool m_isActive;
+    [SerializeField] public bool m_isActive;
 
     private ThermalManager m_thermalManager;
 
